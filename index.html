@@ -19,15 +19,15 @@ html,body{margin:0;height:100%;color:var(--fg);overflow:hidden;overscroll-behavi
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased}
-html{background:#000}
-body{background:transparent}
-#stage{position:fixed;top:0;left:0;right:0;bottom:calc(-1 * var(--gapB, 0px));transition:opacity 3s ease;touch-action:none}
+html{background:#000;height:calc(100% + var(--gapB, 0px))}   /* iPad Home Screen bug: page is short by the status-bar height */
+body{background:#000;position:relative}
+#stage{position:absolute;inset:0;transition:opacity 3s ease;touch-action:none}
 body.sleep #stage{opacity:.07}
 body.idle .scene{opacity:0!important}
 .scene{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
 .scene.on{opacity:1}
-canvas.bg{position:absolute;top:0;left:0;width:100%;height:calc(100% + env(safe-area-inset-top) + 4px);display:block}
-.grain{position:absolute;top:0;left:0;right:0;height:calc(100% + env(safe-area-inset-top) + 4px);pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-size:160px 160px}
+canvas.bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-size:160px 160px}
 body.bg-black canvas.bg,body.bg-black .grain{display:none}
 .scene{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.64);--track:rgba(255,255,255,.18);--fillc:rgba(255,255,255,.78)}
 .scene.light{--fg:rgba(0,0,0,.86);--dim:rgba(0,0,0,.56);--track:rgba(0,0,0,.14);--fillc:rgba(0,0,0,.62)}
@@ -64,7 +64,7 @@ body.paused .status{height:auto;opacity:1}
 body.layout-art{--art:min(93vh,93vw)}
 body.layout-art .info{display:none}
 
-#idle{position:fixed;top:0;left:0;right:0;bottom:calc(-1 * var(--gapB, 0px));display:none;place-items:center;color:rgba(255,255,255,.35);
+#idle{position:absolute;inset:0;display:none;place-items:center;color:rgba(255,255,255,.35);
   font-size:clamp(14px,2vmin,22px);letter-spacing:.14em;text-transform:uppercase;font-weight:600}
 body.idle #idle{display:grid}
 
@@ -90,7 +90,7 @@ body.hud #meta{opacity:1;pointer-events:auto}
   padding:10px 16px;border-radius:12px;background:rgba(24,24,27,.8);font-size:14px;opacity:0;transition:opacity .4s;pointer-events:none;z-index:9;text-align:center}
 #toast.on{opacity:1}
 
-#setup{position:fixed;inset:0;display:none;place-items:center;z-index:8;padding:24px;
+#setup{position:absolute;inset:0;display:none;place-items:center;z-index:8;padding:24px;
   background:radial-gradient(120% 90% at 30% 20%,#1d1d22 0%,#0a0a0b 60%,#000 100%);-webkit-user-select:text;user-select:text}
 body.setup #setup{display:grid}
 body.setup #stage,body.setup #hud,body.setup #meta{display:none}
@@ -319,7 +319,7 @@ function fillInfo(s, np) {
 }
 function setNowPlaying(np) {
   current = np;
-  body.classList.toggle('idle', !np); syncRootBg();
+  body.classList.toggle('idle', !np);
   body.classList.toggle('paused', !!np && !np.playing);
   $('#playIcon').setAttribute('d', np && np.playing ? 'M6 4h4v16H6zm8 0h4v16h-4z' : 'M7 4v16l13-8z');
   updateSleep();
@@ -351,7 +351,7 @@ function upgradeCover(s, url, label) {
 }
 function swapTo(s) {
   if (active && active !== s) { active.el.classList.remove('on'); active.fadeUntil = performance.now() + 1700; }
-  s.el.classList.add('on'); active = s; updateMeta(); syncRootBg();
+  s.el.classList.add('on'); active = s; updateMeta();
 }
 function applyYear(s, np, appleYear) {
   const ys = [np.year, appleYear].filter(y => /^\d{4}$/.test(y || '')).map(Number);
@@ -546,7 +546,7 @@ function blurPass(a, b, w, h, r, horiz) {
 let bufA = null, bufB = null;
 function renderBg(s, t) {
   const c = s.bg, img = s.bgImg;
-  const vw = innerWidth || 1, vh = innerHeight || 1;
+  const vw = body.clientWidth || innerWidth || 1, vh = body.clientHeight || innerHeight || 1;
   const W = BG_W, H = Math.max(8, Math.round(BG_W * vh / vw));
   if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
   const x = c.getContext('2d', { willReadFrequently: true });
@@ -591,25 +591,9 @@ function setBgImage(s, url) {
   s.bgImg = null; s.bgUrl = url || ''; s.tone = 'dark'; s.el.classList.remove('light'); s.phase = hashPhase(s.key || url || '');
   const x = s.bg.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, s.bg.width, s.bg.height);
   if (!url) return Promise.resolve();
-  return loadCors(url).then(im => { if (s.bgUrl === url) { s.bgImg = im; renderBg(s, BG_T); if (s === active) syncRootBg(); } }).catch(() => {});
+  return loadCors(url).then(im => { if (s.bgUrl === url) { s.bgImg = im; renderBg(s, BG_T); } }).catch(() => {});
 }
-function rerenderBgs() { for (const s of scenes) if (s.bgImg) renderBg(s, BG_T); syncRootBg(); }
-// iPad Home Screen apps can leave a strip at the bottom that only the page's base background reaches.
-// Paint that base with the bottom edge of the current background so the strip blends in.
-function syncRootBg() {
-  const root = document.documentElement;
-  const plain = !active || !active.bgImg || sleeping || body.classList.contains('bg-black') ||
-    body.classList.contains('idle') || body.classList.contains('setup');
-  if (plain) { root.style.background = '#000'; return; }
-  const c = active.bg; let d;
-  try { d = c.getContext('2d').getImageData(0, c.height - 1, c.width, 1).data; } catch (e) { root.style.background = '#000'; return; }
-  const N = 10, stops = [];
-  for (let k = 0; k < N; k++) {
-    const i = Math.round(k * (c.width - 1) / (N - 1)) * 4;
-    stops.push('rgb(' + d[i] + ',' + d[i + 1] + ',' + d[i + 2] + ') ' + (k / (N - 1) * 100).toFixed(1) + '%');
-  }
-  root.style.background = 'linear-gradient(to right,' + stops.join(',') + ')';
-}
+function rerenderBgs() { for (const s of scenes) if (s.bgImg) renderBg(s, BG_T); }
 let resizeT;
 addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(rerenderBgs, 250); });
 function makeGrain() {
@@ -642,13 +626,13 @@ function updateSleep() {
   else { pausedSince = idleSince = null; }
   const should = !!((pausedSince && now - pausedSince > SLEEP_PAUSED_MS) || (idleSince && now - idleSince > SLEEP_IDLE_MS));
   if (should !== sleeping) {
-    sleeping = should; body.classList.toggle('sleep', should); syncRootBg();
+    sleeping = should; body.classList.toggle('sleep', should);
     if (should) releaseWake(); else keepAwake();
   }
 }
 function nudgeAwake() {
   if (pausedSince) pausedSince = Date.now(); if (idleSince) idleSince = Date.now();
-  if (sleeping) { sleeping = false; body.classList.remove('sleep'); syncRootBg(); }
+  if (sleeping) { sleeping = false; body.classList.remove('sleep'); }
   keepAwake();
 }
 
@@ -673,11 +657,11 @@ function fixStandaloneGap() {
     const sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
     const land = innerWidth > innerHeight, H = land ? sw : sh, W = land ? sh : sw;
     const g = H - innerHeight;
-    if (g > 0 && g <= 64 && Math.abs(W - innerWidth) < 2) gap = g;   // full-screen only, not Split View
+    if (g > 0 && g <= 64 && Math.abs(W - innerWidth) <= 4) gap = g;   // full-screen only, not Split View
   }
   document.documentElement.style.setProperty('--gapB', gap + 'px');
 }
-addEventListener('resize', fixStandaloneGap); addEventListener('orientationchange', () => setTimeout(fixStandaloneGap, 300));
+addEventListener('resize', () => { fixStandaloneGap(); }); addEventListener('orientationchange', () => setTimeout(fixStandaloneGap, 300));
 fixStandaloneGap();
 
 // Swipe left for the next track, right for the previous one.
@@ -737,7 +721,7 @@ function applyPrefs() {
 
 /* ---------- setup screen ---------- */
 function setupMsg(m) { $('#setupMsg').textContent = m || ''; }
-function showSetup(m) { body.classList.add('setup'); document.documentElement.style.background = '#000'; $('#cid').value = clientId(); if (m !== undefined) setupMsg(m); }
+function showSetup(m) { body.classList.add('setup'); $('#cid').value = clientId(); if (m !== undefined) setupMsg(m); }
 $('#copyRu').onclick = async () => {
   try { await navigator.clipboard.writeText(redirectUri()); $('#copyRu').textContent = 'Copied'; }
   catch (e) { const r = document.createRange(); r.selectNodeContents($('#ru')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
