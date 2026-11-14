@@ -19,7 +19,10 @@ html,body{margin:0;height:100%;color:var(--fg);overflow:hidden;overscroll-behavi
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased}
-html{background:#000;height:calc(100% + var(--gapB, 0px))}   /* iPad Home Screen bug: page is short by the status-bar height */
+html{background:#000}
+/* iPad Home Screen bug (WebKit 236445): the page is drawn from the top of the screen but sized as if the
+   status bar took space, leaving a strip at the bottom. Grow the page by the status-bar inset to fill it. */
+html.standalone{height:calc(100% + env(safe-area-inset-top))}
 body{background:#000;position:relative}
 #stage{position:absolute;inset:0;transition:opacity 3s ease;touch-action:none}
 body.sleep #stage{opacity:.07}
@@ -151,6 +154,7 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
 (() => {
 'use strict';
 
+const APP_VERSION = '7';   // bump on every upload: open pages compare this and reload themselves
 // Optional: paste your Spotify Client ID here to skip typing it on the iPad. It is not a secret.
 const CLIENT_ID_DEFAULT = '';
 const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
@@ -644,25 +648,13 @@ function updateMeta() {
   $('#metaWake').textContent = !('wakeLock' in navigator) ? 'Screen wake lock not supported here'
     : (wake && !wake.released) ? 'Screen kept awake' : (sleeping ? 'Dimmed (nothing playing)' : 'Screen not held awake: tap once');
   $('#metaMode').textContent = DEMO ? 'Demo mode' : '';
-  const ps = getComputedStyle($('#probe')), vv = window.visualViewport;
-  $('#metaDiag').textContent = 'screen ' + screen.width + '\u00d7' + screen.height + ' \u00b7 window ' + innerWidth + '\u00d7' + innerHeight +
-    (vv ? ' \u00b7 visual ' + Math.round(vv.height) : '') + ' \u00b7 inset t' + parseInt(ps.paddingTop) + ' b' + parseInt(ps.paddingBottom) +
-    ' \u00b7 gap ' + (getComputedStyle(document.documentElement).getPropertyValue('--gapB').trim() || '0') + (navigator.standalone ? ' \u00b7 home screen' : '');
+  const ps = getComputedStyle($('#probe'));
+  $('#metaDiag').textContent = 'v' + APP_VERSION + ' \u00b7 window ' + innerWidth + '\u00d7' + innerHeight + ' \u00b7 page ' +
+    Math.round(document.documentElement.getBoundingClientRect().height) + ' \u00b7 inset t' + parseInt(ps.paddingTop) + ' b' + parseInt(ps.paddingBottom) +
+    (document.documentElement.classList.contains('standalone') ? ' \u00b7 home screen' : '');
   $('#signout').hidden = DEMO;
 }
-// Home Screen web apps on iPad can leave a strip at the bottom (WebKit bug 236445): stretch the display over it.
-function fixStandaloneGap() {
-  let gap = 0;
-  if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) {
-    const sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
-    const land = innerWidth > innerHeight, H = land ? sw : sh, W = land ? sh : sw;
-    const g = H - innerHeight;
-    if (g > 0 && g <= 64 && Math.abs(W - innerWidth) <= 4) gap = g;   // full-screen only, not Split View
-  }
-  document.documentElement.style.setProperty('--gapB', gap + 'px');
-}
-addEventListener('resize', () => { fixStandaloneGap(); }); addEventListener('orientationchange', () => setTimeout(fixStandaloneGap, 300));
-fixStandaloneGap();
+if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) document.documentElement.classList.add('standalone');
 
 // Swipe left for the next track, right for the previous one.
 let touch0 = null, swiped = false;
@@ -757,14 +749,28 @@ function demoControl(a) {
   else { current.progress += current.playing ? Date.now() - current.at : 0; current.at = Date.now(); current.playing = !current.playing; setNowPlaying(current); scheduleDemo(); }
 }
 
+/* ---------- self-update: reload when a newer version is uploaded ---------- */
+async function checkUpdate() {
+  try {
+    const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
+    const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION) {
+      const u = new URL(location.href); u.searchParams.delete('check'); u.searchParams.set('r', Date.now()); location.replace(u.toString());
+    }
+  } catch (e) {}
+}
+setInterval(() => { if (!document.hidden) checkUpdate(); }, 3 * 60e3);
+
 /* ---------- start ---------- */
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { clearTimeout(pollT); return; }
+  checkUpdate();
   keepAwake(); if (!DEMO && !body.classList.contains('setup')) poll();
 });
 setInterval(() => { tick(); updateSleep(); }, 1000);
 
 (async function init() {
+  if (params.has('r')) { const u = new URL(location.href); u.searchParams.delete('r'); history.replaceState(null, '', u.pathname + u.search); }
   applyPrefs(); makeGrain();
   $('#ru').textContent = redirectUri();
   body.classList.add('idle');
