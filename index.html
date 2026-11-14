@@ -11,7 +11,8 @@
 <link rel="apple-touch-icon" href="icon.png">
 <title>Album Art</title>
 <style>
-:root{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.6);--art:min(86vh,62vw)}
+:root{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.62);--art:min(86vh,58vw);--font:'Jost',-apple-system,sans-serif;
+  --w-title:500;--w-artist:400;--w-album:500;--ls-title:-.005em;--ls-album:.12em}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:var(--fg);overflow:hidden;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
@@ -22,16 +23,16 @@ body.sleep #stage{opacity:.07}
 body.idle .scene{opacity:0!important}
 .scene{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
 .scene.on{opacity:1}
-.bg{position:absolute;inset:-14%;background-size:cover;background-position:center;
-  filter:blur(70px) brightness(.42) saturate(1.3);transform:translateZ(0)}
-.scene::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.3);pointer-events:none}
-body.bg-black .scene::after{display:none}
-.comp{z-index:1}
-body.bg-black .bg{display:none}
-.comp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:5.5vmin;
+canvas.bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-size:160px 160px}
+body.bg-black canvas.bg,body.bg-black .grain{display:none}
+.scene{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.64);--track:rgba(255,255,255,.18);--fillc:rgba(255,255,255,.78)}
+.scene.light{--fg:rgba(0,0,0,.86);--dim:rgba(0,0,0,.56);--track:rgba(0,0,0,.14);--fillc:rgba(0,0,0,.62)}
+body.bg-black .scene.light{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.64);--track:rgba(255,255,255,.18);--fillc:rgba(255,255,255,.78)}
+.comp{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-evenly;gap:0;z-index:1;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   animation:drift 1200s ease-in-out infinite alternate}
-@keyframes drift{0%{transform:translate(-.5%,-.4%)}33%{transform:translate(.5%,.2%)}66%{transform:translate(-.2%,.5%)}100%{transform:translate(.4%,-.5%)}}
+@keyframes drift{0%{transform:translate(-.25%,-.3%)}33%{transform:translate(.25%,.15%)}66%{transform:translate(-.1%,.3%)}100%{transform:translate(.2%,-.3%)}}
 .art{flex:none;width:var(--art);height:var(--art);position:relative;border-radius:3px;
   box-shadow:0 2.6vmin 8vmin rgba(0,0,0,.6),0 .4vmin 1.4vmin rgba(0,0,0,.45);transition:filter 1.2s ease}
 .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px;display:block}
@@ -39,20 +40,21 @@ body.bg-black .bg{display:none}
 .art.none{background:linear-gradient(140deg,#2a2a2e,#121214)}
 .art.none img{display:none}
 body.paused .art{filter:brightness(.62) saturate(.75)}
-.info{text-shadow:0 1px 14px rgba(0,0,0,.35);width:min(24vw,48vh);display:flex;flex-direction:column;gap:1.2vmin;transition:opacity .45s ease}
+.info{width:min(26vw,50vh);display:flex;flex-direction:column;gap:1.3vmin;transition:opacity .45s ease;
+  font-family:var(--font);color:var(--fg)}
+.info>*{transition:color 1.2s ease}
 .info.fade{opacity:0}
-.title{font-family:ui-serif,"New York","Iowan Old Style",Georgia,serif;font-weight:500;
-  font-size:clamp(22px,3.9vmin,52px);line-height:1.12;letter-spacing:-.01em;
+.title{font-weight:var(--w-title);font-size:clamp(22px,4vmin,54px);line-height:1.1;letter-spacing:var(--ls-title);
   display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-.artist{font-size:clamp(15px,2.4vmin,30px);font-weight:500;opacity:.88;line-height:1.25}
-.album{font-size:clamp(11px,1.65vmin,19px);color:var(--dim);letter-spacing:.09em;text-transform:uppercase;font-weight:600;line-height:1.45}
-.status{font-size:clamp(11px,1.5vmin,17px);color:var(--dim);letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+.artist{font-size:clamp(15px,2.5vmin,32px);font-weight:var(--w-artist);line-height:1.25}
+.album{font-size:clamp(11px,1.6vmin,19px);color:var(--dim);letter-spacing:var(--ls-album);text-transform:uppercase;font-weight:var(--w-album);line-height:1.5}
+.status{font-size:clamp(11px,1.5vmin,17px);color:var(--dim);letter-spacing:var(--ls-album);text-transform:uppercase;font-weight:var(--w-album);
   height:0;opacity:0;overflow:hidden;transition:opacity .6s}
 body.paused .status{height:auto;opacity:1}
-.bar{margin-top:2.4vmin;height:2px;width:100%;background:rgba(255,255,255,.16);border-radius:2px;overflow:hidden}
-.fill{height:100%;width:100%;background:rgba(255,255,255,.72);transform-origin:left center;transform:scaleX(0);transition:transform 1s linear}
+.bar{margin-top:2.4vmin;height:2px;width:100%;background:var(--track);border-radius:2px;overflow:hidden;transition:background 1.2s}
+.fill{height:100%;width:100%;background:var(--fillc);transform-origin:left center;transform:scaleX(0);transition:transform 1s linear}
 @media (orientation:portrait){
-  body.layout-gallery .comp{flex-direction:column;gap:4.5vmin}
+  body.layout-gallery .comp{flex-direction:column}
   body.layout-gallery{--art:min(86vw,62vh)}
   body.layout-gallery .info{width:var(--art);text-align:center;align-items:center}
 }
@@ -108,9 +110,9 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
 </head>
 <body class="layout-gallery">
 <div id="stage">
-  <div class="scene"><div class="bg"></div><div class="comp"><div class="art none"><img class="base" alt=""><img class="top" alt=""></div>
+  <div class="scene"><canvas class="bg"></canvas><div class="grain"></div><div class="comp"><div class="art none"><img class="base" alt=""><img class="top" alt=""></div>
     <div class="info"><div class="title"></div><div class="artist"></div><div class="album"></div><div class="status">Paused</div><div class="bar"><div class="fill"></div></div></div></div></div>
-  <div class="scene"><div class="bg"></div><div class="comp"><div class="art none"><img class="base" alt=""><img class="top" alt=""></div>
+  <div class="scene"><canvas class="bg"></canvas><div class="grain"></div><div class="comp"><div class="art none"><img class="base" alt=""><img class="top" alt=""></div>
     <div class="info"><div class="title"></div><div class="artist"></div><div class="album"></div><div class="status">Paused</div><div class="bar"><div class="fill"></div></div></div></div></div>
 </div>
 <div id="idle">Nothing playing on Spotify</div>
@@ -122,6 +124,7 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
   <button id="bNext" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
   <span class="sep"></span>
   <button id="bLayout" aria-label="Layout"><svg viewBox="0 0 24 24"><path d="M3 5h11v14H3zM16 7h5v2h-5zm0 4h5v2h-5zm0 4h3v2h-3z"/></svg></button>
+  <button id="bFont" aria-label="Font"><svg viewBox="0 0 24 24"><path d="M9.6 5h2.1l5.1 14h-2.3l-1.3-3.7H7.9L6.6 19H4.4zm-1 8.4h4.1L10.6 7.6zM18.6 10.2c1.9 0 3 1 3 2.8V19h-1.8v-1c-.5.7-1.3 1.2-2.4 1.2-1.6 0-2.6-1-2.6-2.3 0-1.5 1.2-2.4 3.2-2.4h1.8V14c0-.9-.6-1.4-1.6-1.4-.8 0-1.5.3-2.1.8l-.8-1.2c.9-.7 1.9-1 3.3-1zm-.4 7.5c.9 0 1.6-.6 1.6-1.5v-.8h-1.6c-1 0-1.5.4-1.5 1.1 0 .7.6 1.2 1.5 1.2z"/></svg></button>
   <button id="bBg" aria-label="Background"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 2v14a7 7 0 0 1 0-14z"/></svg></button>
   <button id="bFull" aria-label="Full screen" hidden><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
 </div>
@@ -344,7 +347,7 @@ function upgradeCover(s, url, label) {
   if (s === active) updateMeta();
 }
 function swapTo(s) {
-  if (active && active !== s) active.el.classList.remove('on');
+  if (active && active !== s) { active.el.classList.remove('on'); active.fadeUntil = performance.now() + 1700; }
   s.el.classList.add('on'); active = s; updateMeta();
 }
 function applyYear(s, np, appleYear) {
@@ -358,26 +361,29 @@ async function showAlbum(np) {
   const s = scenes.find(x => x !== active) || scenes[0];
   s.betterYear = null; s.key = np.key;
   fillInfo(s, np);
-  s.bg.style.backgroundImage = np.small ? 'url("' + np.small + '")' : 'none';
+  const bgP = setBgImage(s, np.small);
   const hiP = (np.episode || np.local) ? Promise.resolve(null) : hiResFor(np).catch(() => null);
   const hiLoaded = hiP.then(h => h ? loadImg(h.url).then(im => ({ h, im })) : null).catch(() => null);
   const first = await Promise.race([hiLoaded, sleep(1500).then(() => 'wait')]);
   if (my !== seq) return;
   if (first && first !== 'wait') {
     setCover(s, first.h.url, artLabel('Apple Music', first.im));
-    if (!np.small) s.bg.style.backgroundImage = 'url("' + first.h.small + '")';
-    applyYear(s, np, first.h.year); swapTo(s); tick(); return;
+    if (!np.small) setBgImage(s, first.h.small);
+    applyYear(s, np, first.h.year);
+    await Promise.race([bgP, sleep(700)]); if (my !== seq) return;
+    swapTo(s); tick(); return;
   }
   let sdIm = null;
   if (np.sd) { try { sdIm = await loadImg(np.sd); } catch (e) {} }
   if (my !== seq) return;
   setCover(s, sdIm ? np.sd : '', sdIm ? artLabel('Spotify', sdIm) : 'no artwork');
+  await Promise.race([bgP, sleep(700)]); if (my !== seq) return;
   swapTo(s); tick();
   if (first === 'wait') {
     const late = await hiLoaded;
     if (!late || my !== seq) return;
     upgradeCover(s, late.h.url, artLabel('Apple Music', late.im));
-    if (!np.small) s.bg.style.backgroundImage = 'url("' + late.h.small + '")';
+    if (!np.small) setBgImage(s, late.h.small);
     applyYear(s, np, late.h.year);
   }
 }
@@ -511,6 +517,115 @@ async function hiResFor(np) {
 }
 window.AlbumArt = { norm, toks, textMatches, signature, similarity, verifyCandidates, loadCors, itunesSearch, hiResFor, sizeUrl, artCache };
 
+/* ---------- colour background, after Apple Music's: spinning copies of the cover, heavily blurred and oversaturated ---------- */
+const BG_W = 120, BG_FPS = 15, BG_SAT = 1.7;
+const REDUCE_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LAYERS = [   // size and orbit as a fraction of the longest side; spin and orbit speed in turns per second
+  { s: 1.25, cx: .50, cy: .50, spin: 1 / 150, orbit: 0, os: 0 },
+  { s: 0.80, cx: .30, cy: .36, spin: -1 / 100, orbit: 0, os: 0 },
+  { s: 0.50, cx: .62, cy: .56, spin: 1 / 64, orbit: .22, os: 1 / 90 },
+  { s: 0.25, cx: .46, cy: .50, spin: -1 / 46, orbit: .30, os: -1 / 58 }
+];
+function blurPass(a, b, w, h, r, horiz) {
+  const len = horiz ? w : h, lines = horiz ? h : w, step = horiz ? 4 : w * 4, div = 2 * r + 1;
+  for (let l = 0; l < lines; l++) {
+    const base = horiz ? l * w * 4 : l * 4;
+    for (let c = 0; c < 3; c++) {
+      let sum = 0;
+      for (let i = -r; i <= r; i++) sum += a[base + Math.min(len - 1, Math.max(0, i)) * step + c];
+      for (let i = 0; i < len; i++) {
+        b[base + i * step + c] = sum / div;
+        sum += a[base + Math.min(len - 1, i + r + 1) * step + c] - a[base + Math.max(0, i - r) * step + c];
+      }
+    }
+  }
+}
+let bufA = null, bufB = null;
+function renderBg(s, t) {
+  const c = s.bg, img = s.bgImg;
+  const vw = innerWidth || 1, vh = innerHeight || 1;
+  const W = BG_W, H = Math.max(8, Math.round(BG_W * vh / vw));
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
+  if (!img) return;
+  const M = Math.max(W, H), ph = s.phase || 0;
+  for (const L of LAYERS) {
+    const size = L.s * M, a = (t * L.spin + ph) * 2 * Math.PI, oa = (t * L.os + ph * 1.7) * 2 * Math.PI;
+    x.save(); x.translate(L.cx * W + Math.cos(oa) * L.orbit * M, L.cy * H + Math.sin(oa) * L.orbit * M); x.rotate(a);
+    x.drawImage(img, -size / 2, -size / 2, size, size); x.restore();
+  }
+  let id;
+  try { id = x.getImageData(0, 0, W, H); } catch (e) { return; }
+  const d = id.data, n = d.length;
+  if (!bufA || bufA.length !== n) { bufA = new Float32Array(n); bufB = new Float32Array(n); }
+  for (let i = 0; i < n; i++) bufA[i] = d[i];
+  const r = Math.max(2, Math.round(W / 12));
+  for (let k = 0; k < 3; k++) { blurPass(bufA, bufB, W, H, r, true); blurPass(bufB, bufA, W, H, r, false); }
+  const artMode = body.classList.contains('layout-art'), land = vw >= vh;
+  let lsum = 0, lcount = 0;
+  for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
+    const i = (y * W + xx) * 4;
+    const R0 = bufA[i], G0 = bufA[i + 1], B0 = bufA[i + 2], l = .299 * R0 + .587 * G0 + .114 * B0;
+    const R = Math.max(0, Math.min(255, l + (R0 - l) * BG_SAT)), G = Math.max(0, Math.min(255, l + (G0 - l) * BG_SAT)), B = Math.max(0, Math.min(255, l + (B0 - l) * BG_SAT));
+    bufA[i] = R; bufA[i + 1] = G; bufA[i + 2] = B;
+    if (artMode || (land ? xx > W * .56 : y > H * .64)) { lsum += .299 * R + .587 * G + .114 * B; lcount++; }
+  }
+  const L = lcount ? lsum / lcount / 255 : 0;
+  // Light backgrounds keep their colour and get dark text, as iTunes did; otherwise darken only as far as white text needs.
+  if (artMode) s.tone = 'dark';
+  else if (s.tone !== 'light' && L > .68) s.tone = 'light';
+  else if (s.tone === 'light' && L < .58) s.tone = 'dark';
+  s.el.classList.toggle('light', s.tone === 'light');
+  const kt = s.tone === 'light' ? 1 : Math.min(1, (artMode ? .55 : .42) / Math.max(L, .01));
+  s.k = s.kReady ? s.k + (kt - s.k) * .1 : kt; s.kReady = true;
+  for (let i = 0; i < n; i += 4) { d[i] = bufA[i] * s.k; d[i + 1] = bufA[i + 1] * s.k; d[i + 2] = bufA[i + 2] * s.k; d[i + 3] = 255; }
+  x.putImageData(id, 0, 0);
+}
+function setBgImage(s, url) {
+  s.bgImg = null; s.bgUrl = url || ''; s.kReady = false; s.tone = 'dark'; s.el.classList.remove('light'); s.phase = Math.random();
+  const x = s.bg.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, s.bg.width, s.bg.height);
+  if (!url) return Promise.resolve();
+  return loadCors(url).then(im => { if (s.bgUrl === url) { s.bgImg = im; renderBg(s, REDUCE_MOTION ? 0 : performance.now() / 1000); } }).catch(() => {});
+}
+let lastBg = 0;
+function bgLoop(ts) {
+  requestAnimationFrame(bgLoop);
+  if (document.hidden || sleeping || body.classList.contains('bg-black') || body.classList.contains('setup')) return;
+  if (ts - lastBg < (REDUCE_MOTION ? 1000 : 1000 / BG_FPS)) return;
+  lastBg = ts;
+  for (const s of scenes) if (s.el.classList.contains('on') || (s.fadeUntil && ts < s.fadeUntil)) renderBg(s, REDUCE_MOTION ? 0 : ts / 1000);
+}
+function makeGrain() {
+  const c = document.createElement('canvas'); c.width = c.height = 160;
+  const x = c.getContext('2d'), id = x.createImageData(160, 160);
+  for (let i = 0; i < id.data.length; i += 4) { const v = Math.random() * 255 | 0; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+  x.putImageData(id, 0, 0);
+  const u = c.toDataURL(); document.querySelectorAll('.grain').forEach(g => g.style.backgroundImage = 'url(' + u + ')');
+}
+
+/* ---------- fonts: one family for every line ---------- */
+const DEFAULT_FONT = 'jost';
+const FONTS = [
+  { id: 'jost', name: 'Jost', href: 'https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap',
+    stack: "'Jost', -apple-system, sans-serif", vars: { '--w-title': 500, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.005em', '--ls-album': '.13em' } },
+  { id: 'fraunces', name: 'Fraunces', href: 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&display=swap',
+    stack: "'Fraunces', ui-serif, Georgia, serif", vars: { '--w-title': 500, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.01em', '--ls-album': '.1em' } },
+  { id: 'newsreader', name: 'Newsreader', href: 'https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..600&display=swap',
+    stack: "'Newsreader', ui-serif, Georgia, serif", vars: { '--w-title': 500, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.01em', '--ls-album': '.1em' } },
+  { id: 'system', name: 'SF Pro (built in)', href: null,
+    stack: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif", vars: { '--w-title': 600, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.015em', '--ls-album': '.1em' } }
+];
+function applyFont() {
+  const f = FONTS.find(x => x.id === LS.get('font', DEFAULT_FONT)) || FONTS[0];
+  if (f.href && !document.querySelector('link[data-font="' + f.id + '"]')) {
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = f.href; l.dataset.font = f.id; document.head.appendChild(l);
+  }
+  const st = document.documentElement.style;
+  st.setProperty('--font', f.stack); for (const k in f.vars) st.setProperty(k, f.vars[k]);
+  return f;
+}
+
 /* ---------- progress ---------- */
 function tick() {
   if (!active || !current || !current.duration || active.key !== current.key) return;
@@ -580,7 +695,11 @@ $('#bPrev').onclick = () => control('prev');
 $('#bNext').onclick = () => control('next');
 $('#bPlay').onclick = () => control('toggle');
 $('#bLayout').onclick = () => { const v = body.classList.contains('layout-art') ? 'gallery' : 'art'; LS.set('layout', v); applyPrefs(); };
-$('#bBg').onclick = () => { const v = body.classList.contains('bg-black') ? 'blur' : 'black'; LS.set('bg', v); applyPrefs(); };
+$('#bBg').onclick = () => { const v = body.classList.contains('bg-black') ? 'fluid' : 'black'; LS.set('bg', v); applyPrefs(); toast(v === 'black' ? 'Black background' : 'Colour background', 1500); };
+$('#bFont').onclick = () => {
+  const i = FONTS.findIndex(x => x.id === LS.get('font', DEFAULT_FONT));
+  const f = FONTS[(i + 1) % FONTS.length]; LS.set('font', f.id); applyFont(); toast(f.name, 1500);
+};
 const fsEl = document.documentElement;
 const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 if (!standalone && (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen)) {
@@ -596,6 +715,7 @@ function applyPrefs() {
   const layout = LS.get('layout', 'gallery'), bg = LS.get('bg', 'blur');
   body.classList.toggle('layout-art', layout === 'art'); body.classList.toggle('layout-gallery', layout !== 'art');
   body.classList.toggle('bg-black', bg === 'black');
+  applyFont();
 }
 
 /* ---------- setup screen ---------- */
@@ -644,7 +764,7 @@ document.addEventListener('visibilitychange', () => {
 setInterval(() => { tick(); updateSleep(); }, 1000);
 
 (async function init() {
-  applyPrefs();
+  applyPrefs(); makeGrain(); requestAnimationFrame(bgLoop);
   $('#ru').textContent = redirectUri();
   body.classList.add('idle');
   if (DEMO) { keepAwake(); demoPlay(0); return; }
