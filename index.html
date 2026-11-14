@@ -134,7 +134,6 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
   <button id="bFull" aria-label="Full screen" hidden><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
 </div>
 <div id="toast"></div>
-<div id="probe" style="position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)"></div>
 
 <div id="setup"><div class="panel">
   <h1>Album Art</h1>
@@ -154,7 +153,7 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
 (() => {
 'use strict';
 
-const APP_VERSION = '7';   // bump on every upload: open pages compare this and reload themselves
+const APP_VERSION = '9';   // bump on every upload: open pages compare this and reload themselves
 // Optional: paste your Spotify Client ID here to skip typing it on the iPad. It is not a secret.
 const CLIENT_ID_DEFAULT = '';
 const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
@@ -468,29 +467,11 @@ async function verifyCandidates(cands, ref) {
 }
 function sizeUrl(u, n) { return /\/\d+x\d+bb\.\w+$/.test(u) ? u.replace(/\/\d+x\d+bb\.\w+$/, '/' + n + 'x' + n + 'bb.jpg') : u.replace('100x100', n + 'x' + n); }
 
-function jsonp(url, ms = 8000) {
-  return new Promise((res, rej) => {
-    const cb = 'aa_cb_' + Math.random().toString(36).slice(2);
-    const sc = document.createElement('script');
-    const done = () => { clearTimeout(t); delete window[cb]; sc.remove(); };
-    const t = setTimeout(() => { done(); rej(new Error('timeout')); }, ms);
-    window[cb] = d => { done(); res(d); };
-    sc.onerror = () => { done(); rej(new Error('jsonp')); };
-    sc.src = url + '&callback=' + cb; document.head.appendChild(sc);
-  });
-}
 async function itunesSearch(term, country) {
   const url = 'https://itunes.apple.com/search?' + new URLSearchParams({ term, media: 'music', entity: 'album', limit: '15', country });
-  if (LS.get('itunesJsonp') !== true) {
-    try {
-      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 7000);
-      const r = await fetch(url, { signal: ctl.signal }); clearTimeout(t);
-      if (r.ok) return ((await r.json()) || {}).results || [];
-    } catch (e) { /* CORS blocked or offline: try JSONP */ }
-  }
-  const d = await jsonp(url);           // throws on network failure
-  LS.set('itunesJsonp', true);
-  return (d || {}).results || [];
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+  try { const r = await fetch(url, { signal: ctl.signal }); if (!r.ok) throw new Error('itunes ' + r.status); return ((await r.json()) || {}).results || []; }
+  finally { clearTimeout(t); }
 }
 const artCache = LS.get('artCache', {});
 function saveCache() {
@@ -648,10 +629,7 @@ function updateMeta() {
   $('#metaWake').textContent = !('wakeLock' in navigator) ? 'Screen wake lock not supported here'
     : (wake && !wake.released) ? 'Screen kept awake' : (sleeping ? 'Dimmed (nothing playing)' : 'Screen not held awake: tap once');
   $('#metaMode').textContent = DEMO ? 'Demo mode' : '';
-  const ps = getComputedStyle($('#probe'));
-  $('#metaDiag').textContent = 'v' + APP_VERSION + ' \u00b7 window ' + innerWidth + '\u00d7' + innerHeight + ' \u00b7 page ' +
-    Math.round(document.documentElement.getBoundingClientRect().height) + ' \u00b7 inset t' + parseInt(ps.paddingTop) + ' b' + parseInt(ps.paddingBottom) +
-    (document.documentElement.classList.contains('standalone') ? ' \u00b7 home screen' : '');
+  $('#metaDiag').textContent = 'Version ' + APP_VERSION;
   $('#signout').hidden = DEMO;
 }
 if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) document.documentElement.classList.add('standalone');
@@ -759,7 +737,7 @@ async function checkUpdate() {
     }
   } catch (e) {}
 }
-setInterval(() => { if (!document.hidden) checkUpdate(); }, 3 * 60e3);
+setInterval(() => { if (!document.hidden) checkUpdate(); }, 15 * 60e3);
 
 /* ---------- start ---------- */
 document.addEventListener('visibilitychange', () => {
