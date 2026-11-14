@@ -15,10 +15,12 @@
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
   --w-title:600;--w-artist:400;--w-album:500;--ls-title:-.015em;--ls-album:.1em}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#000;color:var(--fg);overflow:hidden;overscroll-behavior:none;
+html,body{margin:0;height:100%;color:var(--fg);overflow:hidden;overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased}
+html{background:#000}
+body{background:transparent}
 #stage{position:fixed;top:0;left:0;right:0;bottom:calc(-1 * var(--gapB, 0px));transition:opacity 3s ease;touch-action:none}
 body.sleep #stage{opacity:.07}
 body.idle .scene{opacity:0!important}
@@ -118,7 +120,7 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
 </div>
 <div id="idle">Nothing playing on Spotify</div>
 
-<div id="meta"><div id="metaArt">Artwork: none yet</div><div id="metaWake"></div><div id="metaMode"></div><button id="signout">Sign out</button></div>
+<div id="meta"><div id="metaArt">Artwork: none yet</div><div id="metaWake"></div><div id="metaMode"></div><div id="metaDiag" style="opacity:.6;font-size:11px"></div><button id="signout">Sign out</button></div>
 <div id="hud">
   <button id="bPrev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg></button>
   <button id="bPlay" class="big" aria-label="Play or pause"><svg viewBox="0 0 24 24"><path id="playIcon" d="M7 4v16l13-8z"/></svg></button>
@@ -129,6 +131,7 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
   <button id="bFull" aria-label="Full screen" hidden><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
 </div>
 <div id="toast"></div>
+<div id="probe" style="position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)"></div>
 
 <div id="setup"><div class="panel">
   <h1>Album Art</h1>
@@ -316,7 +319,7 @@ function fillInfo(s, np) {
 }
 function setNowPlaying(np) {
   current = np;
-  body.classList.toggle('idle', !np);
+  body.classList.toggle('idle', !np); syncRootBg();
   body.classList.toggle('paused', !!np && !np.playing);
   $('#playIcon').setAttribute('d', np && np.playing ? 'M6 4h4v16H6zm8 0h4v16h-4z' : 'M7 4v16l13-8z');
   updateSleep();
@@ -348,7 +351,7 @@ function upgradeCover(s, url, label) {
 }
 function swapTo(s) {
   if (active && active !== s) { active.el.classList.remove('on'); active.fadeUntil = performance.now() + 1700; }
-  s.el.classList.add('on'); active = s; updateMeta();
+  s.el.classList.add('on'); active = s; updateMeta(); syncRootBg();
 }
 function applyYear(s, np, appleYear) {
   const ys = [np.year, appleYear].filter(y => /^\d{4}$/.test(y || '')).map(Number);
@@ -588,9 +591,25 @@ function setBgImage(s, url) {
   s.bgImg = null; s.bgUrl = url || ''; s.tone = 'dark'; s.el.classList.remove('light'); s.phase = hashPhase(s.key || url || '');
   const x = s.bg.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, s.bg.width, s.bg.height);
   if (!url) return Promise.resolve();
-  return loadCors(url).then(im => { if (s.bgUrl === url) { s.bgImg = im; renderBg(s, BG_T); } }).catch(() => {});
+  return loadCors(url).then(im => { if (s.bgUrl === url) { s.bgImg = im; renderBg(s, BG_T); if (s === active) syncRootBg(); } }).catch(() => {});
 }
-function rerenderBgs() { for (const s of scenes) if (s.bgImg) renderBg(s, BG_T); }
+function rerenderBgs() { for (const s of scenes) if (s.bgImg) renderBg(s, BG_T); syncRootBg(); }
+// iPad Home Screen apps can leave a strip at the bottom that only the page's base background reaches.
+// Paint that base with the bottom edge of the current background so the strip blends in.
+function syncRootBg() {
+  const root = document.documentElement;
+  const plain = !active || !active.bgImg || sleeping || body.classList.contains('bg-black') ||
+    body.classList.contains('idle') || body.classList.contains('setup');
+  if (plain) { root.style.background = '#000'; return; }
+  const c = active.bg; let d;
+  try { d = c.getContext('2d').getImageData(0, c.height - 1, c.width, 1).data; } catch (e) { root.style.background = '#000'; return; }
+  const N = 10, stops = [];
+  for (let k = 0; k < N; k++) {
+    const i = Math.round(k * (c.width - 1) / (N - 1)) * 4;
+    stops.push('rgb(' + d[i] + ',' + d[i + 1] + ',' + d[i + 2] + ') ' + (k / (N - 1) * 100).toFixed(1) + '%');
+  }
+  root.style.background = 'linear-gradient(to right,' + stops.join(',') + ')';
+}
 let resizeT;
 addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(rerenderBgs, 250); });
 function makeGrain() {
@@ -623,13 +642,13 @@ function updateSleep() {
   else { pausedSince = idleSince = null; }
   const should = !!((pausedSince && now - pausedSince > SLEEP_PAUSED_MS) || (idleSince && now - idleSince > SLEEP_IDLE_MS));
   if (should !== sleeping) {
-    sleeping = should; body.classList.toggle('sleep', should);
+    sleeping = should; body.classList.toggle('sleep', should); syncRootBg();
     if (should) releaseWake(); else keepAwake();
   }
 }
 function nudgeAwake() {
   if (pausedSince) pausedSince = Date.now(); if (idleSince) idleSince = Date.now();
-  if (sleeping) { sleeping = false; body.classList.remove('sleep'); }
+  if (sleeping) { sleeping = false; body.classList.remove('sleep'); syncRootBg(); }
   keepAwake();
 }
 
@@ -641,6 +660,10 @@ function updateMeta() {
   $('#metaWake').textContent = !('wakeLock' in navigator) ? 'Screen wake lock not supported here'
     : (wake && !wake.released) ? 'Screen kept awake' : (sleeping ? 'Dimmed (nothing playing)' : 'Screen not held awake: tap once');
   $('#metaMode').textContent = DEMO ? 'Demo mode' : '';
+  const ps = getComputedStyle($('#probe')), vv = window.visualViewport;
+  $('#metaDiag').textContent = 'screen ' + screen.width + '\u00d7' + screen.height + ' \u00b7 window ' + innerWidth + '\u00d7' + innerHeight +
+    (vv ? ' \u00b7 visual ' + Math.round(vv.height) : '') + ' \u00b7 inset t' + parseInt(ps.paddingTop) + ' b' + parseInt(ps.paddingBottom) +
+    ' \u00b7 gap ' + (getComputedStyle(document.documentElement).getPropertyValue('--gapB').trim() || '0') + (navigator.standalone ? ' \u00b7 home screen' : '');
   $('#signout').hidden = DEMO;
 }
 // Home Screen web apps on iPad can leave a strip at the bottom (WebKit bug 236445): stretch the display over it.
@@ -714,7 +737,7 @@ function applyPrefs() {
 
 /* ---------- setup screen ---------- */
 function setupMsg(m) { $('#setupMsg').textContent = m || ''; }
-function showSetup(m) { body.classList.add('setup'); $('#cid').value = clientId(); if (m !== undefined) setupMsg(m); }
+function showSetup(m) { body.classList.add('setup'); document.documentElement.style.background = '#000'; $('#cid').value = clientId(); if (m !== undefined) setupMsg(m); }
 $('#copyRu').onclick = async () => {
   try { await navigator.clipboard.writeText(redirectUri()); $('#copyRu').textContent = 'Copied'; }
   catch (e) { const r = document.createRange(); r.selectNodeContents($('#ru')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
