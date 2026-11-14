@@ -11,20 +11,21 @@
 <link rel="apple-touch-icon" href="icon.png">
 <title>Album Art</title>
 <style>
-:root{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.62);--art:min(86vh,58vw);--font:'Jost',-apple-system,sans-serif;
-  --w-title:500;--w-artist:400;--w-album:500;--ls-title:-.005em;--ls-album:.12em}
+:root{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.62);--art:min(73vh,49vw);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --w-title:600;--w-artist:400;--w-album:500;--ls-title:-.015em;--ls-album:.1em}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#000;color:var(--fg);overflow:hidden;
+html,body{margin:0;height:100%;background:#000;color:var(--fg);overflow:hidden;overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased}
-#stage{position:fixed;inset:0;transition:opacity 3s ease}
+#stage{position:fixed;top:0;left:0;right:0;bottom:calc(-1 * var(--gapB, 0px));transition:opacity 3s ease;touch-action:none}
 body.sleep #stage{opacity:.07}
 body.idle .scene{opacity:0!important}
 .scene{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
 .scene.on{opacity:1}
-canvas.bg{position:absolute;inset:0;width:100%;height:100%;display:block}
-.grain{position:absolute;inset:0;pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-size:160px 160px}
+canvas.bg{position:absolute;top:0;left:0;width:100%;height:calc(100% + env(safe-area-inset-top) + 4px);display:block}
+.grain{position:absolute;top:0;left:0;right:0;height:calc(100% + env(safe-area-inset-top) + 4px);pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-size:160px 160px}
 body.bg-black canvas.bg,body.bg-black .grain{display:none}
 .scene{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.64);--track:rgba(255,255,255,.18);--fillc:rgba(255,255,255,.78)}
 .scene.light{--fg:rgba(0,0,0,.86);--dim:rgba(0,0,0,.56);--track:rgba(0,0,0,.14);--fillc:rgba(0,0,0,.62)}
@@ -40,7 +41,7 @@ body.bg-black .scene.light{--fg:rgba(255,255,255,.95);--dim:rgba(255,255,255,.64
 .art.none{background:linear-gradient(140deg,#2a2a2e,#121214)}
 .art.none img{display:none}
 body.paused .art{filter:brightness(.62) saturate(.75)}
-.info{width:min(26vw,50vh);display:flex;flex-direction:column;gap:1.3vmin;transition:opacity .45s ease;
+.info{width:min(34vw,62vh);display:flex;flex-direction:column;gap:1.3vmin;transition:opacity .45s ease;
   font-family:var(--font);color:var(--fg)}
 .info>*{transition:color 1.2s ease}
 .info.fade{opacity:0}
@@ -55,13 +56,13 @@ body.paused .status{height:auto;opacity:1}
 .fill{height:100%;width:100%;background:var(--fillc);transform-origin:left center;transform:scaleX(0);transition:transform 1s linear}
 @media (orientation:portrait){
   body.layout-gallery .comp{flex-direction:column}
-  body.layout-gallery{--art:min(86vw,62vh)}
+  body.layout-gallery{--art:min(73vw,53vh)}
   body.layout-gallery .info{width:var(--art);text-align:center;align-items:center}
 }
 body.layout-art{--art:min(93vh,93vw)}
 body.layout-art .info{display:none}
 
-#idle{position:fixed;inset:0;display:none;place-items:center;color:rgba(255,255,255,.35);
+#idle{position:fixed;top:0;left:0;right:0;bottom:calc(-1 * var(--gapB, 0px));display:none;place-items:center;color:rgba(255,255,255,.35);
   font-size:clamp(14px,2vmin,22px);letter-spacing:.14em;text-transform:uppercase;font-weight:600}
 body.idle #idle{display:grid}
 
@@ -124,7 +125,6 @@ body.setup #stage,body.setup #hud,body.setup #meta{display:none}
   <button id="bNext" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
   <span class="sep"></span>
   <button id="bLayout" aria-label="Layout"><svg viewBox="0 0 24 24"><path d="M3 5h11v14H3zM16 7h5v2h-5zm0 4h5v2h-5zm0 4h3v2h-3z"/></svg></button>
-  <button id="bFont" aria-label="Font"><svg viewBox="0 0 24 24"><path d="M9.6 5h2.1l5.1 14h-2.3l-1.3-3.7H7.9L6.6 19H4.4zm-1 8.4h4.1L10.6 7.6zM18.6 10.2c1.9 0 3 1 3 2.8V19h-1.8v-1c-.5.7-1.3 1.2-2.4 1.2-1.6 0-2.6-1-2.6-2.3 0-1.5 1.2-2.4 3.2-2.4h1.8V14c0-.9-.6-1.4-1.6-1.4-.8 0-1.5.3-2.1.8l-.8-1.2c.9-.7 1.9-1 3.3-1zm-.4 7.5c.9 0 1.6-.6 1.6-1.5v-.8h-1.6c-1 0-1.5.4-1.5 1.1 0 .7.6 1.2 1.5 1.2z"/></svg></button>
   <button id="bBg" aria-label="Background"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 2v14a7 7 0 0 1 0-14z"/></svg></button>
   <button id="bFull" aria-label="Full screen" hidden><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
 </div>
@@ -517,10 +517,10 @@ async function hiResFor(np) {
 }
 window.AlbumArt = { norm, toks, textMatches, signature, similarity, verifyCandidates, loadCors, itunesSearch, hiResFor, sizeUrl, artCache };
 
-/* ---------- colour background, after Apple Music's: spinning copies of the cover, heavily blurred and oversaturated ---------- */
-const BG_W = 120, BG_FPS = 15, BG_SAT = 1.7;
-const REDUCE_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const LAYERS = [   // size and orbit as a fraction of the longest side; spin and orbit speed in turns per second
+/* ---------- colour background, after Apple Music's: overlapping copies of the cover, heavily blurred and oversaturated.
+   Drawn once per album (no animation). ---------- */
+const BG_W = 160, BG_SAT = 1.7;
+const LAYERS = [   // size and orbit as a fraction of the longest side; spin and orbit speed set the fixed arrangement
   { s: 1.25, cx: .50, cy: .50, spin: 1 / 150, orbit: 0, os: 0 },
   { s: 0.80, cx: .30, cy: .36, spin: -1 / 100, orbit: 0, os: 0 },
   { s: 0.50, cx: .62, cy: .56, spin: 1 / 64, orbit: .22, os: 1 / 90 },
@@ -578,52 +578,27 @@ function renderBg(s, t) {
   else if (s.tone === 'light' && L < .58) s.tone = 'dark';
   s.el.classList.toggle('light', s.tone === 'light');
   const kt = s.tone === 'light' ? 1 : Math.min(1, (artMode ? .55 : .42) / Math.max(L, .01));
-  s.k = s.kReady ? s.k + (kt - s.k) * .1 : kt; s.kReady = true;
+  s.k = kt;
   for (let i = 0; i < n; i += 4) { d[i] = bufA[i] * s.k; d[i + 1] = bufA[i + 1] * s.k; d[i + 2] = bufA[i + 2] * s.k; d[i + 3] = 255; }
   x.putImageData(id, 0, 0);
 }
+function hashPhase(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000; }
+const BG_T = 37;   // fixed moment in the arrangement; the album key varies it so each cover gets its own layout
 function setBgImage(s, url) {
-  s.bgImg = null; s.bgUrl = url || ''; s.kReady = false; s.tone = 'dark'; s.el.classList.remove('light'); s.phase = Math.random();
+  s.bgImg = null; s.bgUrl = url || ''; s.tone = 'dark'; s.el.classList.remove('light'); s.phase = hashPhase(s.key || url || '');
   const x = s.bg.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, s.bg.width, s.bg.height);
   if (!url) return Promise.resolve();
-  return loadCors(url).then(im => { if (s.bgUrl === url) { s.bgImg = im; renderBg(s, REDUCE_MOTION ? 0 : performance.now() / 1000); } }).catch(() => {});
+  return loadCors(url).then(im => { if (s.bgUrl === url) { s.bgImg = im; renderBg(s, BG_T); } }).catch(() => {});
 }
-let lastBg = 0;
-function bgLoop(ts) {
-  requestAnimationFrame(bgLoop);
-  if (document.hidden || sleeping || body.classList.contains('bg-black') || body.classList.contains('setup')) return;
-  if (ts - lastBg < (REDUCE_MOTION ? 1000 : 1000 / BG_FPS)) return;
-  lastBg = ts;
-  for (const s of scenes) if (s.el.classList.contains('on') || (s.fadeUntil && ts < s.fadeUntil)) renderBg(s, REDUCE_MOTION ? 0 : ts / 1000);
-}
+function rerenderBgs() { for (const s of scenes) if (s.bgImg) renderBg(s, BG_T); }
+let resizeT;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(rerenderBgs, 250); });
 function makeGrain() {
   const c = document.createElement('canvas'); c.width = c.height = 160;
   const x = c.getContext('2d'), id = x.createImageData(160, 160);
   for (let i = 0; i < id.data.length; i += 4) { const v = Math.random() * 255 | 0; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
   x.putImageData(id, 0, 0);
   const u = c.toDataURL(); document.querySelectorAll('.grain').forEach(g => g.style.backgroundImage = 'url(' + u + ')');
-}
-
-/* ---------- fonts: one family for every line ---------- */
-const DEFAULT_FONT = 'jost';
-const FONTS = [
-  { id: 'jost', name: 'Jost', href: 'https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap',
-    stack: "'Jost', -apple-system, sans-serif", vars: { '--w-title': 500, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.005em', '--ls-album': '.13em' } },
-  { id: 'fraunces', name: 'Fraunces', href: 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&display=swap',
-    stack: "'Fraunces', ui-serif, Georgia, serif", vars: { '--w-title': 500, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.01em', '--ls-album': '.1em' } },
-  { id: 'newsreader', name: 'Newsreader', href: 'https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..600&display=swap',
-    stack: "'Newsreader', ui-serif, Georgia, serif", vars: { '--w-title': 500, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.01em', '--ls-album': '.1em' } },
-  { id: 'system', name: 'SF Pro (built in)', href: null,
-    stack: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif", vars: { '--w-title': 600, '--w-artist': 400, '--w-album': 500, '--ls-title': '-.015em', '--ls-album': '.1em' } }
-];
-function applyFont() {
-  const f = FONTS.find(x => x.id === LS.get('font', DEFAULT_FONT)) || FONTS[0];
-  if (f.href && !document.querySelector('link[data-font="' + f.id + '"]')) {
-    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = f.href; l.dataset.font = f.id; document.head.appendChild(l);
-  }
-  const st = document.documentElement.style;
-  st.setProperty('--font', f.stack); for (const k in f.vars) st.setProperty(k, f.vars[k]);
-  return f;
 }
 
 /* ---------- progress ---------- */
@@ -668,7 +643,30 @@ function updateMeta() {
   $('#metaMode').textContent = DEMO ? 'Demo mode' : '';
   $('#signout').hidden = DEMO;
 }
+// Home Screen web apps on iPad can leave a strip at the bottom (WebKit bug 236445): stretch the display over it.
+function fixStandaloneGap() {
+  let gap = 0;
+  if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) {
+    const sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
+    const land = innerWidth > innerHeight, H = land ? sw : sh, W = land ? sh : sw;
+    const g = H - innerHeight;
+    if (g > 0 && g <= 64 && Math.abs(W - innerWidth) < 2) gap = g;   // full-screen only, not Split View
+  }
+  document.documentElement.style.setProperty('--gapB', gap + 'px');
+}
+addEventListener('resize', fixStandaloneGap); addEventListener('orientationchange', () => setTimeout(fixStandaloneGap, 300));
+fixStandaloneGap();
+
+// Swipe left for the next track, right for the previous one.
+let touch0 = null, swiped = false;
+document.getElementById('stage').addEventListener('touchstart', e => { const t = e.touches[0]; touch0 = { x: t.clientX, y: t.clientY, at: Date.now() }; swiped = false; }, { passive: true });
+document.getElementById('stage').addEventListener('touchend', e => {
+  if (!touch0) return; const t = e.changedTouches[0];
+  const dx = t.clientX - touch0.x, dy = t.clientY - touch0.y; touch0 = null;
+  if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) { swiped = true; nudgeAwake(); toast(dx < 0 ? 'Next' : 'Previous', 900); control(dx < 0 ? 'next' : 'prev'); }
+}, { passive: true });
 document.getElementById('stage').addEventListener('click', () => {
+  if (swiped) { swiped = false; return; }
   nudgeAwake();
   if (body.classList.contains('hud')) body.classList.remove('hud'); else showHud();
 });
@@ -696,10 +694,6 @@ $('#bNext').onclick = () => control('next');
 $('#bPlay').onclick = () => control('toggle');
 $('#bLayout').onclick = () => { const v = body.classList.contains('layout-art') ? 'gallery' : 'art'; LS.set('layout', v); applyPrefs(); };
 $('#bBg').onclick = () => { const v = body.classList.contains('bg-black') ? 'fluid' : 'black'; LS.set('bg', v); applyPrefs(); toast(v === 'black' ? 'Black background' : 'Colour background', 1500); };
-$('#bFont').onclick = () => {
-  const i = FONTS.findIndex(x => x.id === LS.get('font', DEFAULT_FONT));
-  const f = FONTS[(i + 1) % FONTS.length]; LS.set('font', f.id); applyFont(); toast(f.name, 1500);
-};
 const fsEl = document.documentElement;
 const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 if (!standalone && (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen)) {
@@ -715,7 +709,7 @@ function applyPrefs() {
   const layout = LS.get('layout', 'gallery'), bg = LS.get('bg', 'blur');
   body.classList.toggle('layout-art', layout === 'art'); body.classList.toggle('layout-gallery', layout !== 'art');
   body.classList.toggle('bg-black', bg === 'black');
-  applyFont();
+  rerenderBgs();
 }
 
 /* ---------- setup screen ---------- */
@@ -764,7 +758,7 @@ document.addEventListener('visibilitychange', () => {
 setInterval(() => { tick(); updateSleep(); }, 1000);
 
 (async function init() {
-  applyPrefs(); makeGrain(); requestAnimationFrame(bgLoop);
+  applyPrefs(); makeGrain();
   $('#ru').textContent = redirectUri();
   body.classList.add('idle');
   if (DEMO) { keepAwake(); demoPlay(0); return; }
